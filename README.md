@@ -19,6 +19,8 @@ project-1-synapse/
 │   ├── ...csv                        # Various prediction outputs
 ├── scripts/                          # Python modules
 │   ├── helper.py                     # Data loading and utility functions
+│   ├── preprocessing.py              # 2026: cleaning, feature selection, class balancing
+│   ├── data_experiments.py           # 2026: compares preprocessing / balancing strategies
 │   ├── models.py                     # Model classes (RegularizedLogisticRegression)
 │   ├── evaluate_utils.py             # Evaluation metrics and visualization
 │   ├── data_utils.py                 # Data exploration utilities
@@ -64,6 +66,82 @@ project-1-synapse/
    - **Negative reduction**: 0.14
    
    The hyperparameter search process tested various combinations of gamma values (ranging from 0.1 to 4+), max_features (ranging from 5 to 100+), and negative_reduction values to find optimal performance based on cross-validation validation loss and F1 scores.
+
+## Data Pipeline (2026 update)
+
+`scripts/preprocessing.py` replaces the ad-hoc preprocessing above with a
+pipeline that is **fitted on the training split only** and then applied to the
+test split (last year min-max scaling was fitted separately on the test set).
+
+### Cleaning and encoding (`Preprocessor`)
+1. Drop 31 survey-administration columns (interview date, phone bookkeeping,
+   `SEQNO`, `_PSU`, sampling weights, ...).
+2. Map BRFSS special codes: `7/9`, `77/99`, `777/999`, `7777/9999`
+   ("don't know" / "refused") become NaN; `88/888/8888` ("none") become 0.
+   Without this, "refused" = 9 sits at the top of ordinal scales and flips
+   the sign of correlations (e.g. `BPHIGH4`).
+3. Drop columns with more than 50 % missing values and constant columns
+   (321 -> 151 columns kept).
+4. Column types: binary (2 values, mapped to 0/1), categorical (3-8 values,
+   one-hot encoded, first category dropped) and numeric (kept as a number).
+5. Impute with the training median (numeric) or mode (binary / categorical)
+   and add a `<name>_missing` indicator for columns with >= 5 % missing
+   values. Several indicators carry real signal (e.g. `_HCVU651_missing`).
+6. Z-score standardise with training mean / std and prepend a bias column
+   (327 output columns).
+
+### Feature selection
+- `rank_features(x, y)`: columns sorted by absolute point-biserial correlation
+  with the label (computed on cleaned, encoded data).
+- `drop_collinear(x, y, threshold=0.95)`: removes one column of each pair with
+  |corr| > 0.95, keeping the one more correlated with the label
+  (327 -> 231 columns).
+- `select_features(x, y, k, protect=[0])`: collinearity filter followed by
+  top-`k` correlation ranking; the bias column is always kept.
+
+### Class balancing (positives are 8.8 % of the data)
+- `undersample(x, y, neg_per_pos)` / `oversample(x, y, neg_per_pos)`: done
+  **once** before training (last year resampled at every gradient step).
+- `class_weights(y)` + `weighted_reg_logistic_regression(...)`: cost-sensitive
+  training, no resampling.
+- `best_f1_threshold(probs, y_val)`: tunes the decision threshold on a
+  validation split.
+
+### Results (`python -m scripts.data_experiments`)
+Same model for every row (regularised logistic regression, GD, 400 steps,
+gamma 0.5, lambda 1e-4). Split 70 / 10 / 20 train / val / test, seed 42.
+Threshold tuned on the validation split; scores on the test split.
+
+| Pipeline | Features | Balancing | Acc @ tuned thr | F1 @ tuned thr |
+|---|---|---|---|---|
+| last year (NaN->0, min-max, per-step neg. reduction) | 56 | neg. reduction 0.14 | 0.845 | 0.386 |
+| new | 60 | none | 0.867 | 0.422 |
+| new | 60 | undersample 1:3 | 0.864 | 0.422 |
+| new | 100 | undersample 1:3 | 0.864 | 0.423 |
+| new | all (230) | none | 0.875 | **0.427** |
+| new | all (230) | class weights | 0.878 | 0.426 |
+| new | all (230) | undersample 1:3 | 0.880 | 0.425 |
+
+Take-aways:
+- Cleaning + proper encoding is worth about +0.04 F1 and +0.03 accuracy over
+  last year's pipeline.
+- Once the threshold is tuned, all balancing strategies land within 0.005 F1
+  of each other; for logistic regression, resampling mostly shifts the
+  intercept. `undersample 1:3` is a good default because it also gives the
+  best F1 at the untuned 0.5 threshold (0.425) and trains on 4x fewer rows.
+- F1 saturates around 60-100 selected features; using all 230 non-collinear
+  columns adds only ~0.005.
+
+Recommended usage:
+```python
+from scripts.preprocessing import Preprocessor, load_feature_names, select_features, undersample
+names = load_feature_names("dataset")
+pre = Preprocessor(names)
+tx_train = pre.fit_transform(x_train)          # fit on train only
+tx_test = pre.transform(x_test)
+cols = select_features(tx_train, y01_train, k=100, protect=[0])
+tx_bal, y_bal = undersample(tx_train[:, cols], y01_train, neg_per_pos=3, seed=42)
+```
 
 ##  Getting Started
 
@@ -121,6 +199,14 @@ The main model class implements:
 - `random_k_fold()`: Splits data into k folds for cross-validation
 - `negative_reduction()`: Reduces negative samples for class balancing
 - `sort_abs_correlation()`: Sorts features by correlation with labels
+
+### `scripts/preprocessing.py`
+- `Preprocessor`: train-fitted cleaning / imputation / one-hot / standardisation
+- `select_features()`, `rank_features()`, `drop_collinear()`: feature selection
+- `undersample()`, `oversample()`, `class_weights()`, `best_f1_threshold()`: balancing
+
+### `scripts/data_experiments.py`
+- Reproduces the results table in *Data Pipeline (2026 update)*
 
 ### `scripts/models.py`
 - `Model`: Abstract base class for all models

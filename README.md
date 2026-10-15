@@ -19,14 +19,14 @@ project-1-synapse/
 │   ├── ...csv                        # Various prediction outputs
 ├── scripts/                          # Python modules
 │   ├── helper.py                     # Data loading and utility functions
-│   ├── implementations.py            # Core ML algorithms (GD, logistic regression)
 │   ├── models.py                     # Model classes (RegularizedLogisticRegression)
 │   ├── evaluate_utils.py             # Evaluation metrics and visualization
 │   ├── data_utils.py                 # Data exploration utilities
 │   └── model_utils.py                # Model visualization utilities
 ├── exploring.ipynb                   # Contains hyperparameter tuning with 5-fold CV
 ├── run.ipynb                         # Main submission notebook
-├── project1_description.pdf          # Project description document
+├── implementations.py                # The 6 required ML methods (graded; must stay at repo root)
+├── project1_description.pdf          # Project description document (Fall 2026)
 └── README.md                         # This file
 ```
 
@@ -128,7 +128,7 @@ The main model class implements:
 - `MSEGradientDescent`: Alternative model for comparison
 - `AlwaysNegative`, `BernoulliNaiveBayes`: Baseline models
 
-### `scripts/implementations.py`
+### `implementations.py`
 - Core machine learning algorithms:
   - `reg_logistic_regression()`: Regularized logistic regression with gradient descent
   - `logistic_loss()`: Logistic loss computation

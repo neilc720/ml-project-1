@@ -1,5 +1,5 @@
 from scripts.helper import negative_reduction, sort_abs_correlation
-from scripts.implementations import *
+from implementations import *
 
 
 class Model:
@@ -15,7 +15,7 @@ class Model:
         pass
 
     def fit(
-            self, y, tx, display=False, stop_loss=0, from_previous_loss=5
+        self, y, tx, display=False, stop_loss=0, from_previous_loss=5
     ) -> list[float]:
         """
         Fit the model to the data.
@@ -49,7 +49,7 @@ class AlwaysNegative(Model):
         return 0
 
     def fit(
-            self, y, tx, display=False, stop_loss=0, from_previous_loss=5
+        self, y, tx, display=False, stop_loss=0, from_previous_loss=5
     ) -> list[float]:
         return [0]
 
@@ -67,7 +67,7 @@ class BernoulliNaiveBayes(Model):
         return 0
 
     def fit(
-            self, y, tx, display=False, stop_loss=0, from_previous_loss=5
+        self, y, tx, display=False, stop_loss=0, from_previous_loss=5
     ) -> list[float]:
         return [0]
 
@@ -82,6 +82,7 @@ class MSEGradientDescent(Model):
     """
     Mean Squared Error regression using Gradient Descent.
     """
+
     gamma: float
     max_iters: int
 
@@ -93,7 +94,7 @@ class MSEGradientDescent(Model):
         return mean_squared_error_loss(y, tx, self.w)
 
     def fit(
-            self, y, tx, display=False, stop_loss=0, from_previous_loss=5
+        self, y, tx, display=False, stop_loss=0, from_previous_loss=5
     ) -> list[float]:
         """
         Linear regression using gradient descent.
@@ -110,8 +111,8 @@ class MSEGradientDescent(Model):
             if display:
                 print(f"Gradient Descent({n_iter + 1}/{self.max_iters}): loss={loss}")
             if (
-                    n_iter > from_previous_loss
-                    and losses[-from_previous_loss + 1] - loss < stop_loss * self.gamma * 10
+                n_iter > from_previous_loss
+                and losses[-from_previous_loss + 1] - loss < stop_loss * self.gamma * 10
             ):
                 break
         return losses
@@ -124,6 +125,7 @@ class RegularizedLogisticRegression(Model):
     """
     Logistic regression with lambda regularization.
     """
+
     gamma: float
     max_iters: int
     lambda_: float
@@ -133,12 +135,12 @@ class RegularizedLogisticRegression(Model):
     sorted_indices: np.ndarray
 
     def __init__(
-            self,
-            gamma: float,
-            max_iters: int,
-            lambda_: float,
-            max_features: int,
-            negative_reduction=1.0,
+        self,
+        gamma: float,
+        max_iters: int,
+        lambda_: float,
+        max_features: int,
+        negative_reduction=1.0,
     ):
         self.gamma = gamma
         self.max_iters = max_iters
@@ -157,7 +159,7 @@ class RegularizedLogisticRegression(Model):
         return logistic_loss(y_01, filtered_tx, self.w)
 
     def fit(
-            self, y, tx, display=False, stop_loss=0, from_previous_loss=10
+        self, y, tx, display=False, stop_loss=0, from_previous_loss=10
     ) -> list[float]:
         """
         Logistic regression using gradient descent.
@@ -191,10 +193,10 @@ class RegularizedLogisticRegression(Model):
                     f"Logistic regression ({n_iter + 1}/{self.max_iters}): loss={data_loss}"
                 )
             if (
-                    n_iter > from_previous_loss
-                    and 0
-                    < losses[-from_previous_loss + 1] - data_loss
-                    < stop_loss * self.gamma
+                n_iter > from_previous_loss
+                and 0
+                < losses[-from_previous_loss + 1] - data_loss
+                < stop_loss * self.gamma
             ):
                 break
         return losses

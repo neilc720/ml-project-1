@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def explore_data(x, y, title):
     nb_samples = x.shape[0]
     nb_negative = np.sum(y == -1)

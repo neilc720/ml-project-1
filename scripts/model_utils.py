@@ -4,6 +4,7 @@ from scripts.evaluate_utils import confusion_matrix, f1_score
 from scripts.helper import random_k_fold
 from collections import defaultdict
 
+
 def plot_losses(list_of_losses, title, labels=None, log_scale=True):
     """
     Plot multiple loss curves on the same figure.
@@ -28,6 +29,7 @@ def plot_losses(list_of_losses, title, labels=None, log_scale=True):
     plt.legend()
     plt.grid(True)
     plt.show()
+
 
 def plot_confusion_matrix(tp, fp, fn, tn, title=None):
     plt.matshow([[tp, fp], [fn, tn]], cmap=plt.cm.Blues)
@@ -102,6 +104,7 @@ def cross_validation_f1(folds, model, kwargs, display=False, stop_loss=0):
             print(f"Validation F1 score for fold {e+1}: {validation_f1}")
     return validation_f1 / k, tps / k, tns / k, fps / k, fns / k
 
+
 def tune(x, y, k, model, args):
     folds = random_k_fold(x, y, k)
     validation_losses = []
@@ -136,6 +139,7 @@ def tune_f1(x, y, k, model, args):
         plot_confusion_matrix(tps, fps, fns, tns, title=f"Validation result for {a}")
     return f1_validation_scores
 
+
 def plot_tuning_results(
     tuning_args,
     iterative_arg,
@@ -154,13 +158,19 @@ def plot_tuning_results(
             plt.plot(ite, training_losses, label=f"Training {metric}")
         else:
             plt.errorbar(
-                ite, training_losses, yerr=training_deviation, label=f"Training {metric}"
+                ite,
+                training_losses,
+                yerr=training_deviation,
+                label=f"Training {metric}",
             )
     if validation_deviation is None:
         plt.plot(ite, validation_losses, label=f"Validation {metric}")
     else:
         plt.errorbar(
-            ite, validation_losses, yerr=validation_deviation, label=f"Validation {metric}"
+            ite,
+            validation_losses,
+            yerr=validation_deviation,
+            label=f"Validation {metric}",
         )
 
     plt.xlabel(iterative_arg)
@@ -173,6 +183,7 @@ def plot_tuning_results(
     plt.legend()
     plt.show()
 
+
 def show_printing_result_loss(
     args_tuned,
     validation_losses,
@@ -181,7 +192,7 @@ def show_printing_result_loss(
     small_marge=0,
     big_marge=0,
     x_log=True,
-    y_log=True
+    y_log=True,
 ):
     # 1. Group results by same arg value
     grouped_val = defaultdict(list)
@@ -228,6 +239,7 @@ def show_printing_result_loss(
     ):
         print(f"{arg}={g:.4g} | val={v:.4f}±{vs:.4f} | train={t:.4f}±{ts:.4f}")
 
+
 def show_printing_result_two_losses(
     args_tuned,
     validation_losses,
@@ -269,46 +281,70 @@ def show_printing_result_two_losses(
     # Plotting
     fig, ax1 = plt.subplots()
     ax1.set_xlabel(arg1)
-    ax1.set_ylabel('Loss')
+    ax1.set_ylabel("Loss")
     ax1.errorbar(
-        arg_values_arg1, val_means_arg1, yerr=val_stds_arg1, label=f"{arg1} validation loss", color="blue"
+        arg_values_arg1,
+        val_means_arg1,
+        yerr=val_stds_arg1,
+        label=f"{arg1} validation loss",
+        color="blue",
     )
     ax1.errorbar(
-        arg_values_arg1, train_means_arg1, yerr=train_stds_arg1, label=f"{arg1} training loss", color="green"
+        arg_values_arg1,
+        train_means_arg1,
+        yerr=train_stds_arg1,
+        label=f"{arg1} training loss",
+        color="green",
     )
-    ax1.tick_params(axis='y')
+    ax1.tick_params(axis="y")
     if x_log:
-        ax1.set_xscale('log')
+        ax1.set_xscale("log")
     if y_log:
-        ax1.set_yscale('log')
-    ax1.legend(loc='upper left')
+        ax1.set_yscale("log")
+    ax1.legend(loc="upper left")
     ax2 = ax1.twiny()
-    color = 'tab:red'
+    color = "tab:red"
     ax2.set_xlabel(arg2)
     ax2.errorbar(
-        arg_values_arg2, val_means_arg2, yerr=val_stds_arg2, label=f"{arg2} validation loss", color="red"
+        arg_values_arg2,
+        val_means_arg2,
+        yerr=val_stds_arg2,
+        label=f"{arg2} validation loss",
+        color="red",
     )
     ax2.errorbar(
-        arg_values_arg2, train_means_arg2, yerr=train_stds_arg2, label=f"{arg2} training loss", color="orange"
+        arg_values_arg2,
+        train_means_arg2,
+        yerr=train_stds_arg2,
+        label=f"{arg2} training loss",
+        color="orange",
     )
-    ax2.tick_params(axis='y')
+    ax2.tick_params(axis="y")
     if x_log:
-        ax2.set_xscale('log')
+        ax2.set_xscale("log")
     if y_log:
-        ax2.set_yscale('log')
-    ax2.legend(loc='upper right')
+        ax2.set_yscale("log")
+    ax2.legend(loc="upper right")
     plt.title("Loss (mean + std)")
     plt.show()
 
     # Optionally print summary
     print("\nAveraged results:")
     for g, v, t, vs, ts in zip(
-            arg_values_arg1, val_means_arg1, train_means_arg1, val_stds_arg1, train_stds_arg1
+        arg_values_arg1,
+        val_means_arg1,
+        train_means_arg1,
+        val_stds_arg1,
+        train_stds_arg1,
     ):
         print(f"{arg1}={g:.4g} | val={v:.4f}±{vs:.4f} | train={t:.4f}±{ts:.4f}")
     print("\nAveraged results:")
     for g, v, t, vs, ts in zip(
-            arg_values_arg2, val_means_arg2, train_means_arg2, val_stds_arg2, train_stds_arg2
+        arg_values_arg2,
+        val_means_arg2,
+        train_means_arg2,
+        val_stds_arg2,
+        train_stds_arg2,
     ):
         print(f"{arg2}={g:.4g} | val={v:.4f}±{vs:.4f} | train={t:.4f}±{ts:.4f}")
 
@@ -320,7 +356,7 @@ def show_printing_result_f1(
     small_marge=0,
     big_marge=0,
     x_log=True,
-    y_log=False
+    y_log=False,
 ):
     # 1. Group results by same arg value
     grouped_f1 = defaultdict(list)
@@ -356,7 +392,5 @@ def show_printing_result_f1(
 
     # Optionally print summary
     print("\nAveraged results:")
-    for g, f1, fs in zip(
-        arg_values, f1_means, f1_stds
-    ):
+    for g, f1, fs in zip(arg_values, f1_means, f1_stds):
         print(f"{arg}={g:.4g} | val F1={f1:.4f}±{fs:.4f}")

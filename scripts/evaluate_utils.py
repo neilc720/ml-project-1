@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def confusion_matrix(y, y_pred):
     """
     Computes the confusion matrix
@@ -65,7 +66,7 @@ def evaluate_model(model, x, y):
     :param y: True labels
     """
     import matplotlib.pyplot as plt
-    
+
     y_pred = model.predict(x)
     tp, tn, fp, fn = confusion_matrix(y, y_pred)
     acc = accuracy(tp, tn, fp, fn)

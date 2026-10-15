@@ -90,7 +90,7 @@ def build_model_data(height, weight):
 
 
 def random_split_data(
-        x: np.ndarray, y: np.ndarray, ratio=0.8, seed=None
+    x: np.ndarray, y: np.ndarray, ratio=0.8, seed=None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Randomly split data into training and testing sets according to the given ratio."""
     num_samples = x.shape[0]
@@ -104,7 +104,7 @@ def random_split_data(
 
 
 def random_k_fold(
-        x: np.ndarray, y: np.ndarray, k: int, seed=None
+    x: np.ndarray, y: np.ndarray, k: int, seed=None
 ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """Randomly split data into k folds for cross-validation."""
     num_samples = x.shape[0]
@@ -165,7 +165,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         data_size / batch_size
     )  # The maximum amount of non-overlapping batches that can be extracted from the data.
     remainder = (
-            data_size - max_batches * batch_size
+        data_size - max_batches * batch_size
     )  # Points that would be excluded if no overlap is allowed.
 
     if shuffle:
@@ -181,7 +181,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     for start in idxs:
         start_index = start  # The first data point of the batch
         end_index = (
-                start_index + batch_size
+            start_index + batch_size
         )  # The first data point of the following batch
         yield y[start_index:end_index], tx[start_index:end_index]
 

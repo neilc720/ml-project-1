@@ -68,7 +68,9 @@ def mean_squared_error_sgd(
     for n_iter in range(max_iters):
         for i in range(0, len(y), batch_size):
             # Compute gradient
-            grad = mean_squared_error_gradient(y[i:i+batch_size], tx[i:i+batch_size], w)
+            grad = mean_squared_error_gradient(
+                y[i : i + batch_size], tx[i : i + batch_size], w
+            )
             # Update weights
             w = w - gamma * grad
     # Compute loss

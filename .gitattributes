@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Store the submission byte for byte: run.py writes CRLF line endings, like the course helper.
+predictions/champion_v2.csv -text

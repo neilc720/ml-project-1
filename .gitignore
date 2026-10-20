@@ -4,3 +4,4 @@
 github_workdir/
 .venv/
 dataset/
+outputs/

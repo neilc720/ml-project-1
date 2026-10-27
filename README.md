@@ -39,6 +39,8 @@ the other four folds.
 unzip -n dataset.zip   # creates dataset/ with x_train.csv, y_train.csv and x_test.csv
 python run.py          # models/champion_v2.npz -> predictions/champion_v2.csv
 python run.py --train  # optional: cross-validate and refit from the raw CSVs into outputs/
+python -m scripts.evaluate_cv       # after --train: final-model metrics and ablations
+python -m scripts.course_baselines  # course-method baselines on the same folds (20-40 min)
 ```
 
 `run.py` needs Python 3.9 or newer and NumPy, nothing else. It reproduces the submitted CSV byte for
@@ -66,10 +68,13 @@ options for other data folders, model files, output paths and worker counts.
 | `scripts/preprocessing.py` | Jiawei Lin's earlier preprocessing, correlation-based feature selection and balancing utilities |
 | `scripts/data_experiments.py` | Earlier logistic-regression experiments using that preprocessing and feature selection |
 | `scripts/helper.py` | Helpers required by the earlier experiment script |
+| `scripts/evaluate_cv.py` | Final-model metrics and ablations (pooled and cross-fold F1, ROC-AUC, average precision) from the `--train` out-of-fold predictions |
+| `scripts/course_baselines.py` | Baselines built from the required methods (ridge regression, regularised logistic regression by GD) on the final model's folds |
 | `dataset.zip`, `project1_description.pdf` | Course data and project handout |
 | `outputs/` | Generated and git-ignored: parsed-CSV cache and `--train` results |
 
-The three files in `scripts/` are preserved from commit `74a2d5f`. Run the earlier experiments with
+`scripts/preprocessing.py`, `scripts/data_experiments.py` and `scripts/helper.py` are preserved
+from commit `74a2d5f`. Run the earlier experiments with
 `python -m scripts.data_experiments --quick`. The current `run.py` pipeline does not call their
 correlation ranking or collinearity filtering; it reuses the administrative exclusion list while
 keeping `_STATE`.
@@ -201,6 +206,30 @@ model's penalty stayed at 1e-4. The bag of four seeds of the new setting and its
 **Final 5-fold run over all labelled rows.** The submitted model reaches F1 0.4485 (nested 0.4477),
 ROC-AUC 0.8708 and average precision 0.4368. The first version reaches 0.4477 (nested 0.4464) on the
 same folds.
+
+**Baselines and ablations on the same folds.** `python -m scripts.evaluate_cv` (after `--train`)
+and `python -m scripts.course_baselines` score every model below on the final run's five folds over
+all labelled rows. "Cross-fold" F1 chooses each fold's threshold on the other four folds.
+
+| Model | F1 | Cross-fold F1 | ROC-AUC |
+|---|---|---|---|
+| Ridge regression (course method), mean-imputed standardised features | 0.4200 | 0.4188 | 0.8536 |
+| + centred missingness indicators | 0.4285 | 0.4278 | 0.8574 |
+| Regularised logistic regression by GD (course method) | 0.4295 | 0.4290 | 0.8604 |
+| + centred missingness indicators | 0.4374 | 0.4371 | 0.8639 |
+| Wide logistic regression (Newton) | 0.4406 | 0.4401 | 0.8656 |
+| One GBDT (mean over seeds 1–4) | 0.4467 | 0.4456 | 0.8702 |
+| Four-GBDT bag | 0.4481 | 0.4470 | 0.8707 |
+| **Final blend** | **0.4485** | **0.4477** | **0.8708** |
+| Final blend at threshold 0.5 | 0.2494 | – | 0.8708 |
+
+The course baselines use λ = 1e-4. Gradient descent runs 10,000 steps of size 1/L from the training
+log-odds and lands within 0.0005 F1 of Newton's method on the same objective (0.4294 and 0.4379).
+The indicators are centred because raw 0/1 indicators of questions skipped together raise the
+largest eigenvalue of the design's Gram matrix from about 14 to 119, which shrinks the step tenfold:
+with raw indicators, 10,000 steps reached only 0.4327. The tuned threshold is the largest single
+factor, and seed bagging (+0.0014) and the logistic component (+0.0004) are close to the 0.0009
+seed-to-seed spread of a single GBDT.
 
 ## Reproducibility
 

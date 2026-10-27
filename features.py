@@ -67,70 +67,34 @@ _SENTINEL_GROUPS: dict[tuple[tuple[int, ...], tuple[int, ...]], list[str]] = {
         "PHYSHLTH MENTHLTH POORHLTH DRNK3GE5 DOCTDIAB CHKHEMO3 FEETCHK ADPLEASR ADDOWN ADSLEEP ADENERGY "
         "ADEAT1 ADFAIL ADTHINK ADMOVE"
     ).split(),
-    ((7,), ()): (
-        "VIDFCLT2 VIREDIF3 VICTRCT4 VIGLUMA2 VIMACDG2 ASATTACK"
-    ).split(),
-    ((777, 999), (555,)): (
-        "FRUITJU1 FRUIT1 FVBEANS FVGREEN FVORANG VEGETAB1"
-    ).split(),
-    ((777, 999), ()): (
-        "EXEROFT1 EXERHMM1 EXEROFT2 EXERHMM2 LONGWTCH"
-    ).split(),
-    ((777, 999), (888,)): (
-        "ALCDAY5 STRENGTH BLDSUGAR FEETCHK2 ASACTLIM"
-    ).split(),
-    ((99, 99000), ()): (
-        "PAFREQ1_ PAFREQ2_ STRFREQ_"
-    ).split(),
-    ((7777, 9999), ()): (
-        "WEIGHT2 HEIGHT3"
-    ).split(),
-    ((777777, 999999), ()): (
-        "FLSHTMY2 HIVTSTD3"
-    ).split(),
-    ((97, 99), (98,)): (
-        "SCNTWRK1 SCNTLWK1"
-    ).split(),
-    ((98, 99), ()): (
-        "DIABAGE2 ASTHMAGE"
-    ).split(),
-    ((98,), (88,)): (
-        "ASERVIST ASDRVIST"
-    ).split(),
-    ((999, 99900), ()): (
-        "MAXVO2_ FC60_"
-    ).split(),
-    ((14,), ()): (
-        "_AGEG5YR"
-    ).split(),
-    ((3,), ()): (
-        "_AGE65YR"
-    ).split(),
-    ((7,), (8,)): (
-        "ASNOSLEP"
-    ).split(),
-    ((900,), ()): (
-        "DROCDY3_"
-    ).split(),
-    ((98, 99), (88,)): (
-        "ASRCHKUP"
-    ).split(),
-    ((99,), (88,)): (
-        "CHILDREN"
-    ).split(),
-    ((99900,), ()): (
-        "_DRNKWEK"
-    ).split(),
-    ((99999,), ()): (
-        "WTKG3"
-    ).split(),
+    ((7,), ()): ("VIDFCLT2 VIREDIF3 VICTRCT4 VIGLUMA2 VIMACDG2 ASATTACK").split(),
+    ((777, 999), (555,)): ("FRUITJU1 FRUIT1 FVBEANS FVGREEN FVORANG VEGETAB1").split(),
+    ((777, 999), ()): ("EXEROFT1 EXERHMM1 EXEROFT2 EXERHMM2 LONGWTCH").split(),
+    ((777, 999), (888,)): ("ALCDAY5 STRENGTH BLDSUGAR FEETCHK2 ASACTLIM").split(),
+    ((99, 99000), ()): ("PAFREQ1_ PAFREQ2_ STRFREQ_").split(),
+    ((7777, 9999), ()): ("WEIGHT2 HEIGHT3").split(),
+    ((777777, 999999), ()): ("FLSHTMY2 HIVTSTD3").split(),
+    ((97, 99), (98,)): ("SCNTWRK1 SCNTLWK1").split(),
+    ((98, 99), ()): ("DIABAGE2 ASTHMAGE").split(),
+    ((98,), (88,)): ("ASERVIST ASDRVIST").split(),
+    ((999, 99900), ()): ("MAXVO2_ FC60_").split(),
+    ((14,), ()): ("_AGEG5YR").split(),
+    ((3,), ()): ("_AGE65YR").split(),
+    ((7,), (8,)): ("ASNOSLEP").split(),
+    ((900,), ()): ("DROCDY3_").split(),
+    ((98, 99), (88,)): ("ASRCHKUP").split(),
+    ((99,), (88,)): ("CHILDREN").split(),
+    ((99900,), ()): ("_DRNKWEK").split(),
+    ((99999,), ()): ("WTKG3").split(),
 }
 SENTINELS: dict[str, tuple[tuple[int, ...], tuple[int, ...]]] = {
     name: codes for codes, names in _SENTINEL_GROUPS.items() for name in names
 }
 
 
-def schema_for_names(feature_names: Sequence[str]) -> list[tuple[tuple[int, ...], tuple[int, ...]]]:
+def schema_for_names(
+    feature_names: Sequence[str],
+) -> list[tuple[tuple[int, ...], tuple[int, ...]]]:
     """(missing codes, zero codes) for each name, in input order; unknown names get no recoding."""
     return [SENTINELS.get(name, ((), ())) for name in feature_names]
 
@@ -163,7 +127,9 @@ def _csv_lines(source: Path) -> Iterator[str]:
             yield line
 
 
-def load_data(data_dir: str | Path, cache_dir: str | Path, include_test: bool = False) -> dict[str, Any]:
+def load_data(
+    data_dir: str | Path, cache_dir: str | Path, include_test: bool = False
+) -> dict[str, Any]:
     """Parse the course CSVs (cached as ``.npy`` keyed by SHA-256) and check their IDs and labels.
 
     Returns ``x`` (rows x 321 features, NaN for blanks), ``y`` (0/1), ``ids``, ``names`` and the
@@ -179,12 +145,21 @@ def load_data(data_dir: str | Path, cache_dir: str | Path, include_test: bool = 
         digest = file_hash(source)
         hashes[stem] = digest
         with source.open() as stream:
-            headers[stem] = [field.strip() for field in stream.readline().strip().split(",")]
-        if (len(headers[stem]) < 2 or not all(headers[stem])
-                or len(set(headers[stem])) != len(headers[stem])):
-            raise ValueError(f"{source.name} must have a nonempty, unique ID/column header")
+            headers[stem] = [
+                field.strip() for field in stream.readline().strip().split(",")
+            ]
+        if (
+            len(headers[stem]) < 2
+            or not all(headers[stem])
+            or len(set(headers[stem])) != len(headers[stem])
+        ):
+            raise ValueError(
+                f"{source.name} must have a nonempty, unique ID/column header"
+            )
         if stem == "y_train" and len(headers[stem]) != 2:
-            raise ValueError("y_train.csv must contain exactly an ID and a label column")
+            raise ValueError(
+                "y_train.csv must contain exactly an ID and a label column"
+            )
         target = cache_dir / (stem + ".npy")
         marker = target.with_suffix(".sha256")
         if not target.exists() or not marker.exists() or marker.read_text() != digest:
@@ -192,7 +167,9 @@ def load_data(data_dir: str | Path, cache_dir: str | Path, include_test: bool = 
             first_line = next(data_lines, None)
             if first_line is None:
                 raise ValueError(f"{source.name} contains no data rows")
-            matrix = np.loadtxt(itertools.chain([first_line], data_lines), delimiter=",", ndmin=2)
+            matrix = np.loadtxt(
+                itertools.chain([first_line], data_lines), delimiter=",", ndmin=2
+            )
             if matrix.shape[1] != len(headers[stem]):
                 raise ValueError(f"{source.name} header and data column counts differ")
             np.save(target, matrix)
@@ -200,12 +177,19 @@ def load_data(data_dir: str | Path, cache_dir: str | Path, include_test: bool = 
         arrays[stem] = np.load(target, mmap_mode="r")
         matrix = arrays[stem]
         if matrix.ndim != 2 or not len(matrix) or matrix.shape[1] != len(headers[stem]):
-            raise ValueError(f"{source.name} must contain a nonempty matrix matching its header")
+            raise ValueError(
+                f"{source.name} must contain a nonempty matrix matching its header"
+            )
         ids = matrix[:, 0]
-        if (not np.isfinite(ids).all() or not np.equal(ids, np.floor(ids)).all()
-                or np.any(ids < np.iinfo(np.int64).min)
-                or np.any(ids >= float(np.iinfo(np.int64).max))):
-            raise ValueError(f"{source.name} IDs must be finite integers in int64 range")
+        if (
+            not np.isfinite(ids).all()
+            or not np.equal(ids, np.floor(ids)).all()
+            or np.any(ids < np.iinfo(np.int64).min)
+            or np.any(ids >= float(np.iinfo(np.int64).max))
+        ):
+            raise ValueError(
+                f"{source.name} IDs must be finite integers in int64 range"
+            )
         if len(np.unique(ids)) != len(ids):
             raise ValueError(f"Duplicate IDs in {source.name}")
     x, target = arrays["x_train"], arrays["y_train"]
@@ -213,13 +197,20 @@ def load_data(data_dir: str | Path, cache_dir: str | Path, include_test: bool = 
         raise ValueError("Feature and label IDs are not aligned")
     if not np.isin(target[:, 1], [-1, 1]).all():
         raise ValueError("Expected -1/+1 source labels")
-    result = dict(x=x[:, 1:], y=(target[:, 1] == 1).astype(float),
-                  ids=x[:, 0].astype(np.int64), names=headers["x_train"][1:], hashes=hashes)
+    result = dict(
+        x=x[:, 1:],
+        y=(target[:, 1] == 1).astype(float),
+        ids=x[:, 0].astype(np.int64),
+        names=headers["x_train"][1:],
+        hashes=hashes,
+    )
     if include_test:
         if headers["x_test"] != headers["x_train"]:
             raise ValueError("Train/test feature headers differ")
-        result.update(x_test=arrays["x_test"][:, 1:],
-                      test_ids=arrays["x_test"][:, 0].astype(np.int64))
+        result.update(
+            x_test=arrays["x_test"][:, 1:],
+            test_ids=arrays["x_test"][:, 0].astype(np.int64),
+        )
     return result
 
 
@@ -258,7 +249,9 @@ def _validate_matrix(x: Any) -> np.ndarray:
     return x
 
 
-def _clean_column(values: np.ndarray, missing: Sequence[int], zero: Sequence[int]) -> np.ndarray:
+def _clean_column(
+    values: np.ndarray, missing: Sequence[int], zero: Sequence[int]
+) -> np.ndarray:
     """Copy one column, mapping 'none' codes to 0 and sentinel codes to NaN."""
     col = np.array(values, dtype=float, copy=True)
     for code in zero:
@@ -277,7 +270,9 @@ class TreeBinner:
     ``transform`` maps a value to ``1 + #cuts <= value``; NaN maps to 0.
     """
 
-    def __init__(self, feature_names: Sequence[str], config: TreeFeatureConfig | None = None) -> None:
+    def __init__(
+        self, feature_names: Sequence[str], config: TreeFeatureConfig | None = None
+    ) -> None:
         self.feature_names = list(feature_names)
         self.config = config or TreeFeatureConfig()
         self.n_features_in_ = len(self.feature_names)
@@ -311,9 +306,13 @@ class TreeBinner:
                 edges = (distinct[:-1] + distinct[1:]) / 2.0
             else:
                 sample = (
-                    values if len(values) <= cfg.sample_size else rng.choice(values, cfg.sample_size, replace=False)
+                    values
+                    if len(values) <= cfg.sample_size
+                    else rng.choice(values, cfg.sample_size, replace=False)
                 )
-                edges = np.unique(np.quantile(sample, np.arange(1, cfg.max_bins) / cfg.max_bins))
+                edges = np.unique(
+                    np.quantile(sample, np.arange(1, cfg.max_bins) / cfg.max_bins)
+                )
             kept.append(j)
             cuts.append(np.asarray(edges, dtype=float))
         self.column_indices_ = np.asarray(kept, dtype=int)
@@ -374,19 +373,30 @@ class WideFeatureConfig:
     min_level_share: float = 0.001
     n_quantile_bins: int = 10
     clip: tuple[float, float] = (0.005, 0.995)
-    chunk_rows: int = 16_384  # rows per block; also fixes the Newton solver's summation order
+    chunk_rows: int = (
+        16_384  # rows per block; also fixes the Newton solver's summation order
+    )
 
     def __post_init__(self) -> None:
         if self.max_card < 2 or self.n_quantile_bins < 1 or self.chunk_rows < 1:
-            raise ValueError("max_card >= 2, n_quantile_bins >= 1 and chunk_rows >= 1 required")
-        if not 0 <= self.min_level_share < 1 or not 0 <= self.clip[0] < self.clip[1] <= 1:
-            raise ValueError("min_level_share in [0, 1) and 0 <= clip[0] < clip[1] <= 1 required")
+            raise ValueError(
+                "max_card >= 2, n_quantile_bins >= 1 and chunk_rows >= 1 required"
+            )
+        if (
+            not 0 <= self.min_level_share < 1
+            or not 0 <= self.clip[0] < self.clip[1] <= 1
+        ):
+            raise ValueError(
+                "min_level_share in [0, 1) and 0 <= clip[0] < clip[1] <= 1 required"
+            )
 
 
 class WideFeatureMap:
     """Fit on training rows, then ``transform_chunks`` any rows."""
 
-    def __init__(self, feature_names: Sequence[str], config: WideFeatureConfig | None = None) -> None:
+    def __init__(
+        self, feature_names: Sequence[str], config: WideFeatureConfig | None = None
+    ) -> None:
         self.feature_names = list(feature_names)
         self.config = config or WideFeatureConfig()
         self.columns_: list[dict[str, Any]] = []
@@ -422,13 +432,25 @@ class WideFeatureMap:
                 keep = counts / n_rows >= cfg.min_level_share
                 # ``other`` always exists so rare and unseen levels have a column.
                 spec.update(kind="categorical", levels=distinct[keep].tolist())
-                names += [f"{name}={level:g}" for level in spec["levels"]] + [f"{name}=other"]
+                names += [f"{name}={level:g}" for level in spec["levels"]] + [
+                    f"{name}=other"
+                ]
             else:
                 lo, hi = (float(v) for v in np.quantile(values, cfg.clip))
                 clipped = np.clip(values, lo, hi)
                 std = float(clipped.std()) or 1.0
-                edges = np.unique(np.quantile(values, np.arange(1, cfg.n_quantile_bins) / cfg.n_quantile_bins))
-                spec.update(kind="numeric", clip=[lo, hi], mean=float(clipped.mean()), std=std, edges=edges.tolist())
+                edges = np.unique(
+                    np.quantile(
+                        values, np.arange(1, cfg.n_quantile_bins) / cfg.n_quantile_bins
+                    )
+                )
+                spec.update(
+                    kind="numeric",
+                    clip=[lo, hi],
+                    mean=float(clipped.mean()),
+                    std=std,
+                    edges=edges.tolist(),
+                )
                 names += [name] + [f"{name}@q{i}" for i in range(len(edges) + 1)]
             names += [f"{name}=missing"] if spec["has_missing"] else []
             self.columns_.append(spec)
@@ -456,7 +478,9 @@ class WideFeatureMap:
                 position += 1
                 edges = np.asarray(spec["edges"], dtype=float)
                 rows = np.flatnonzero(~missing)
-                out[rows, position + np.searchsorted(edges, col[rows], side="right")] = 1.0
+                out[
+                    rows, position + np.searchsorted(edges, col[rows], side="right")
+                ] = 1.0
                 position += len(edges) + 1
             if spec["has_missing"]:
                 out[:, position] = missing

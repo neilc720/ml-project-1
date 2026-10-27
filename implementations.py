@@ -154,9 +154,7 @@ def logistic_loss(y: np.ndarray, tx: np.ndarray, w: np.ndarray) -> float:
         return np.mean(np.logaddexp(0.0, (1 - 2 * y) * logits))
 
 
-def logistic_regression(
-    y, tx, initial_w, max_iters, gamma
-) -> tuple[np.ndarray, float]:
+def logistic_regression(y, tx, initial_w, max_iters, gamma) -> tuple[np.ndarray, float]:
     """Run full-batch gradient descent on mean binary cross-entropy."""
     return reg_logistic_regression(y, tx, 0.0, initial_w, max_iters, gamma)
 

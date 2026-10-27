@@ -20,7 +20,13 @@ from typing import Any, Callable, Iterable, Mapping
 
 import numpy as np
 
-from features import MISSING_BIN, TreeBinner, WideFeatureMap, tree_feature_config, wide_feature_config
+from features import (
+    MISSING_BIN,
+    TreeBinner,
+    WideFeatureMap,
+    tree_feature_config,
+    wide_feature_config,
+)
 
 logger = logging.getLogger(__name__)
 _MAX_KEYS = 2**31 - 1
@@ -95,7 +101,9 @@ class GBDTParams:
         if not (0 < self.colsample <= 1 and 0 < self.subsample <= 1):
             raise ValueError("colsample and subsample must lie in (0, 1]")
         if self.min_samples_leaf < 1 or self.min_child_weight < 0 or self.l2 < 0:
-            raise ValueError("min_samples_leaf >= 1, min_child_weight >= 0 and l2 >= 0 required")
+            raise ValueError(
+                "min_samples_leaf >= 1, min_child_weight >= 0 and l2 >= 0 required"
+            )
         if self.max_leaf_value <= 0 or self.feature_chunk < 1:
             raise ValueError("max_leaf_value and feature_chunk must be positive")
 
@@ -115,7 +123,12 @@ class TreeArrays:
         return int(np.log2(len(self.feature) + 1)) - 1
 
 
-TREE_DTYPES = {"feature": np.int32, "threshold": np.uint8, "nan_left": bool, "value": np.float64}
+TREE_DTYPES = {
+    "feature": np.int32,
+    "threshold": np.uint8,
+    "nan_left": bool,
+    "value": np.float64,
+}
 
 
 @dataclass
@@ -144,7 +157,10 @@ def build_histograms(
     """
     n_rows, n_features = binned.shape
     chunk = min(int(feature_chunk), n_features)
-    if n_slots * n_features * n_bins > _MAX_HISTOGRAM or n_slots * chunk * n_bins > _MAX_KEYS:
+    if (
+        n_slots * n_features * n_bins > _MAX_HISTOGRAM
+        or n_slots * chunk * n_bins > _MAX_KEYS
+    ):
         raise ValueError("histogram too large; reduce depth, bins or features")
     rows = np.flatnonzero(slot >= 0)
     shape = (n_slots, n_features, n_bins)
@@ -160,27 +176,35 @@ def build_histograms(
         keys = keys + binned[rows[:, None], np.arange(start, stop)[None, :]]
         flat = keys.ravel()
         size = n_slots * width * n_bins
-        G[:, start:stop, :] = np.bincount(flat, weights=np.repeat(g_rows, width), minlength=size).reshape(
+        G[:, start:stop, :] = np.bincount(
+            flat, weights=np.repeat(g_rows, width), minlength=size
+        ).reshape(n_slots, width, n_bins)
+        H[:, start:stop, :] = np.bincount(
+            flat, weights=np.repeat(h_rows, width), minlength=size
+        ).reshape(n_slots, width, n_bins)
+        C[:, start:stop, :] = np.bincount(flat, minlength=size).reshape(
             n_slots, width, n_bins
         )
-        H[:, start:stop, :] = np.bincount(flat, weights=np.repeat(h_rows, width), minlength=size).reshape(
-            n_slots, width, n_bins
-        )
-        C[:, start:stop, :] = np.bincount(flat, minlength=size).reshape(n_slots, width, n_bins)
     return G, H, C
 
 
-def split_chunk(n_slots: int, n_bins: int, feature_chunk: int, budget: int = 2**21) -> int:
+def split_chunk(
+    n_slots: int, n_bins: int, feature_chunk: int, budget: int = 2**21
+) -> int:
     """Features per split-search chunk so one (slot, feature, bin, direction) array stays near ``budget`` cells.
 
     Deep trees with many bins otherwise allocate gigabytes of temporaries. The chunk size never
     changes the result: candidates are scanned in the same (feature, threshold, direction) order and
     ties keep the earlier chunk.
     """
-    return int(max(1, min(int(feature_chunk), budget // max(1, n_slots * (n_bins - 1)))))
+    return int(
+        max(1, min(int(feature_chunk), budget // max(1, n_slots * (n_bins - 1))))
+    )
 
 
-def find_best_splits(G: np.ndarray, H: np.ndarray, C: np.ndarray, params: GBDTParams) -> SplitChoice:
+def find_best_splits(
+    G: np.ndarray, H: np.ndarray, C: np.ndarray, params: GBDTParams
+) -> SplitChoice:
     """Best (feature, threshold, missing direction) per slot under the Newton objective.
 
     Candidates are evaluated in feature chunks; ties resolve toward the lowest
@@ -189,7 +213,11 @@ def find_best_splits(G: np.ndarray, H: np.ndarray, C: np.ndarray, params: GBDTPa
     """
     n_slots, n_features, n_bins = G.shape
     lam = params.l2
-    g_tot, h_tot, c_tot = G[:, 0, :].sum(axis=1), H[:, 0, :].sum(axis=1), C[:, 0, :].sum(axis=1)
+    g_tot, h_tot, c_tot = (
+        G[:, 0, :].sum(axis=1),
+        H[:, 0, :].sum(axis=1),
+        C[:, 0, :].sum(axis=1),
+    )
     parent = 0.5 * g_tot**2 / (h_tot + lam)
     best_gain = np.full(n_slots, -np.inf)
     best_feature = np.full(n_slots, -1, dtype=np.int64)
@@ -215,7 +243,10 @@ def find_best_splits(G: np.ndarray, H: np.ndarray, C: np.ndarray, params: GBDTPa
             & (hr >= params.min_child_weight)
         )
         with np.errstate(divide="ignore", invalid="ignore"):
-            gain = 0.5 * (gl**2 / (hl + lam) + gr**2 / (hr + lam)) - parent[:, None, None, None]
+            gain = (
+                0.5 * (gl**2 / (hl + lam) + gr**2 / (hr + lam))
+                - parent[:, None, None, None]
+            )
         gain = np.where(valid & np.isfinite(gain), gain, -np.inf)
         flat = gain.reshape(n_slots, -1)
         index = np.argmax(flat, axis=1)
@@ -257,7 +288,9 @@ def grow_tree(
     node_of_row = np.zeros(n_rows, dtype=np.int32)
     slot = np.zeros(n_rows, dtype=np.int32)
     level_nodes = np.zeros(1, dtype=np.int64)
-    G, H, C = build_histograms(binned, slot, grad, hess, 1, n_bins, params.feature_chunk)
+    G, H, C = build_histograms(
+        binned, slot, grad, hess, 1, n_bins, params.feature_chunk
+    )
     for depth in range(depth_max):
         split = find_best_splits(G, H, C, params)
         has_split = split.feature >= 0
@@ -271,7 +304,9 @@ def grow_tree(
         rows = rows[has_split[slot[rows]]]
         s = slot[rows]
         bins = binned[rows, split.feature[s]]
-        go_left = np.where(bins == MISSING_BIN, split.nan_left[s], bins <= split.threshold[s])
+        go_left = np.where(
+            bins == MISSING_BIN, split.nan_left[s], bins <= split.threshold[s]
+        )
         child = 2 * node_of_row[rows] + 1 + (~go_left).astype(np.int32)
         node_of_row[rows] = child
         if depth + 1 == depth_max:
@@ -284,26 +319,41 @@ def grow_tree(
         n_children = len(children)
         counts = np.bincount(new_slot[rows], minlength=n_children)
         left_bigger = counts[0::2] >= counts[1::2]
-        small = np.where(left_bigger, np.arange(1, n_children, 2), np.arange(0, n_children, 2))
-        large = np.where(left_bigger, np.arange(0, n_children, 2), np.arange(1, n_children, 2))
+        small = np.where(
+            left_bigger, np.arange(1, n_children, 2), np.arange(0, n_children, 2)
+        )
+        large = np.where(
+            left_bigger, np.arange(0, n_children, 2), np.arange(1, n_children, 2)
+        )
         is_large = np.zeros(n_children, dtype=bool)
         is_large[large] = True
         hist_slot = new_slot.copy()
         hist_slot[rows[is_large[new_slot[rows]]]] = -1
-        G2, H2, C2 = build_histograms(binned, hist_slot, grad, hess, n_children, n_bins, params.feature_chunk)
+        G2, H2, C2 = build_histograms(
+            binned, hist_slot, grad, hess, n_children, n_bins, params.feature_chunk
+        )
         parent_index = np.flatnonzero(has_split)
         G2[large] = G[parent_index] - G2[small]
         H2[large] = np.maximum(H[parent_index] - H2[small], 0.0)
         C2[large] = np.maximum(C[parent_index] - C2[small], 0.0)
         G, H, C, slot, level_nodes = G2, H2, C2, new_slot, children
-    leaf_g = np.bincount(node_of_row, weights=grad.astype(np.float64), minlength=n_nodes)
-    leaf_h = np.bincount(node_of_row, weights=hess.astype(np.float64), minlength=n_nodes)
+    leaf_g = np.bincount(
+        node_of_row, weights=grad.astype(np.float64), minlength=n_nodes
+    )
+    leaf_h = np.bincount(
+        node_of_row, weights=hess.astype(np.float64), minlength=n_nodes
+    )
     denominator = leaf_h + params.l2
     value = np.zeros(n_nodes, dtype=np.float64)
     np.divide(-leaf_g, denominator, out=value, where=denominator > 0)
-    value = np.clip(value, -params.max_leaf_value, params.max_leaf_value) * params.learning_rate
+    value = (
+        np.clip(value, -params.max_leaf_value, params.max_leaf_value)
+        * params.learning_rate
+    )
     value[feature >= 0] = 0.0
-    return TreeArrays(feature=feature, threshold=threshold, nan_left=nan_left, value=value)
+    return TreeArrays(
+        feature=feature, threshold=threshold, nan_left=nan_left, value=value
+    )
 
 
 def apply_tree(tree: TreeArrays, binned: np.ndarray) -> np.ndarray:
@@ -315,7 +365,9 @@ def apply_tree(tree: TreeArrays, binned: np.ndarray) -> np.ndarray:
         feature = tree.feature[node]
         is_leaf = feature < 0
         bins = binned[rows, np.maximum(feature, 0)]
-        go_left = np.where(bins == MISSING_BIN, tree.nan_left[node], bins <= tree.threshold[node])
+        go_left = np.where(
+            bins == MISSING_BIN, tree.nan_left[node], bins <= tree.threshold[node]
+        )
         child = 2 * node + 1 + (~go_left).astype(np.int32)
         node = np.where(is_leaf, node, child)
     return node
@@ -364,7 +416,12 @@ class GBDTClassifier:
 
     # -------------------------------------------------------------- fitting
     def fit(
-        self, binned: Any, y: Any, binned_val: Any = None, y_val: Any = None, n_bins: int | None = None
+        self,
+        binned: Any,
+        y: Any,
+        binned_val: Any = None,
+        y_val: Any = None,
+        n_bins: int | None = None,
     ) -> "GBDTClassifier":
         """Fit on binned rows; validation rows (optional) only drive early stopping on log-loss."""
         p = self.params
@@ -385,7 +442,9 @@ class GBDTClassifier:
         self.intercept_ = float(np.log(prior / (1 - prior)))
         score = np.full(n_rows, self.intercept_)
         val_score = np.full(binned_val.shape[0] if has_val else 0, self.intercept_)
-        best_loss, best_iteration = (_log_loss(y_val, val_score) if has_val else np.inf), 0
+        best_loss, best_iteration = (
+            _log_loss(y_val, val_score) if has_val else np.inf
+        ), 0
         rng = np.random.default_rng(p.seed)
         n_cols = max(1, int(round(p.colsample * self.n_features_)))
         n_sub = max(1, int(round(p.subsample * n_rows)))
@@ -394,13 +453,21 @@ class GBDTClassifier:
             prob = sigmoid(score)
             grad = (prob - y).astype(np.float32)
             hess = (prob * (1 - prob)).astype(np.float32)
-            rows = np.sort(rng.choice(n_rows, n_sub, replace=False)) if n_sub < n_rows else np.arange(n_rows)
+            rows = (
+                np.sort(rng.choice(n_rows, n_sub, replace=False))
+                if n_sub < n_rows
+                else np.arange(n_rows)
+            )
             cols = (
                 np.sort(rng.choice(self.n_features_, n_cols, replace=False))
                 if n_cols < self.n_features_
                 else np.arange(self.n_features_)
             )
-            sample = binned if (n_sub == n_rows and n_cols == self.n_features_) else binned[np.ix_(rows, cols)]
+            sample = (
+                binned
+                if (n_sub == n_rows and n_cols == self.n_features_)
+                else binned[np.ix_(rows, cols)]
+            )
             tree = grow_tree(sample, grad[rows], hess[rows], p, self.n_bins_, cols)
             self.trees_.append(tree)
             score = score + predict_tree(tree, binned)
@@ -436,8 +503,14 @@ class GBDTClassifier:
     def _stacked(self) -> dict[str, np.ndarray]:
         n_nodes = 2 ** (self.params.max_depth + 1) - 1
         if not self.trees_:
-            return {name: np.zeros((0, n_nodes), dtype=dtype) for name, dtype in TREE_DTYPES.items()}
-        return {name: np.stack([getattr(t, name) for t in self.trees_]) for name in TREE_DTYPES}
+            return {
+                name: np.zeros((0, n_nodes), dtype=dtype)
+                for name, dtype in TREE_DTYPES.items()
+            }
+        return {
+            name: np.stack([getattr(t, name) for t in self.trees_])
+            for name in TREE_DTYPES
+        }
 
     def _meta(self) -> dict[str, Any]:
         return {
@@ -450,13 +523,22 @@ class GBDTClassifier:
         }
 
     @classmethod
-    def _restore(cls, meta: Mapping[str, Any], arrays: Mapping[str, np.ndarray]) -> "GBDTClassifier":
+    def _restore(
+        cls, meta: Mapping[str, Any], arrays: Mapping[str, np.ndarray]
+    ) -> "GBDTClassifier":
         model = cls(GBDTParams(**meta["params"]))
         model.intercept_ = float(meta["intercept"])
         model.n_bins_, model.n_features_ = int(meta["n_bins"]), int(meta["n_features"])
-        model.best_iteration_, model.n_estimators_ = int(meta["best_iteration"]), int(meta["n_estimators"])
+        model.best_iteration_, model.n_estimators_ = int(meta["best_iteration"]), int(
+            meta["n_estimators"]
+        )
         model.trees_ = [
-            TreeArrays(**{k: np.asarray(arrays[k][i], dtype=dtype) for k, dtype in TREE_DTYPES.items()})
+            TreeArrays(
+                **{
+                    k: np.asarray(arrays[k][i], dtype=dtype)
+                    for k, dtype in TREE_DTYPES.items()
+                }
+            )
             for i in range(len(arrays["feature"]))
         ]
         return model
@@ -470,7 +552,9 @@ def _chunker(x: Any) -> ChunkSource:
         return x
     matrix = np.asarray(x)
     if matrix.ndim != 2:
-        raise ValueError("x must be a two-dimensional matrix or a callable yielding row chunks")
+        raise ValueError(
+            "x must be a two-dimensional matrix or a callable yielding row chunks"
+        )
     return lambda: iter([matrix])
 
 
@@ -484,10 +568,20 @@ class _State:
 class NewtonLogistic:
     """Chunked IRLS/Newton solver with a backtracking line search; column 0 is an unpenalised bias."""
 
-    def __init__(self, lambda_: float = 1e-4, max_iter: int = 15, tol: float = 1e-6, max_halvings: int = 20) -> None:
+    def __init__(
+        self,
+        lambda_: float = 1e-4,
+        max_iter: int = 15,
+        tol: float = 1e-6,
+        max_halvings: int = 20,
+    ) -> None:
         if lambda_ < 0 or max_iter < 1 or tol <= 0:
             raise ValueError("lambda_ >= 0, max_iter >= 1 and tol > 0 required")
-        self.lambda_, self.max_iter, self.tol = float(lambda_), int(max_iter), float(tol)
+        self.lambda_, self.max_iter, self.tol = (
+            float(lambda_),
+            int(max_iter),
+            float(tol),
+        )
         self.max_halvings = int(max_halvings)
         self.coef_: np.ndarray = np.zeros(0)
         self.n_iter_ = 0
@@ -533,7 +627,9 @@ class NewtonLogistic:
             try:
                 direction = np.linalg.solve(state.hessian, state.gradient)
             except np.linalg.LinAlgError:
-                direction = np.linalg.lstsq(state.hessian, state.gradient, rcond=None)[0]
+                direction = np.linalg.lstsq(state.hessian, state.gradient, rcond=None)[
+                    0
+                ]
             slope = float(state.gradient @ direction)
             step = 1.0
             for _ in range(self.max_halvings):
@@ -543,7 +639,9 @@ class NewtonLogistic:
                     break
                 step /= 2
             else:
-                logger.warning("line search failed at iteration %d; stopping", iteration)
+                logger.warning(
+                    "line search failed at iteration %d; stopping", iteration
+                )
                 break
             coef, state = candidate, trial
             self.n_iter_ = iteration
@@ -552,7 +650,9 @@ class NewtonLogistic:
 
     def decision_function(self, x: Any) -> np.ndarray:
         """Linear scores for a matrix or chunk callable."""
-        return np.concatenate([np.asarray(b, dtype=np.float64) @ self.coef_ for b in _chunker(x)()])
+        return np.concatenate(
+            [np.asarray(b, dtype=np.float64) @ self.coef_ for b in _chunker(x)()]
+        )
 
     def predict_proba(self, x: Any) -> np.ndarray:
         """Positive-class probabilities."""
@@ -591,8 +691,12 @@ def fit_wide_lr(
     config: Mapping[str, Any], names: list[str], x: np.ndarray, y: np.ndarray
 ) -> tuple[WideFeatureMap, NewtonLogistic]:
     """Wide feature map + chunked Newton logistic regression fitted on ``x``."""
-    feature_map = WideFeatureMap(names, wide_feature_config(config.get("features", {}))).fit(x)
-    logistic = NewtonLogistic(**config.get("model", {})).fit(lambda: feature_map.transform_chunks(x), y)
+    feature_map = WideFeatureMap(
+        names, wide_feature_config(config.get("features", {}))
+    ).fit(x)
+    logistic = NewtonLogistic(**config.get("model", {})).fit(
+        lambda: feature_map.transform_chunks(x), y
+    )
     return feature_map, logistic
 
 
@@ -612,7 +716,9 @@ class FinalModelSpec:
     def __post_init__(self) -> None:
         n_components = (1 if self.gbdt else 0) + (1 if self.wide_lr else 0)
         if n_components == 0 or len(self.weights) != n_components:
-            raise ValueError("weights must have one entry per component (GBDT bag, wide LR)")
+            raise ValueError(
+                "weights must have one entry per component (GBDT bag, wide LR)"
+            )
         if abs(sum(self.weights) - 1.0) > 1e-9 or min(self.weights) < 0:
             raise ValueError("weights must be non-negative and sum to one")
         if not 0 < self.threshold < 1:
@@ -661,9 +767,21 @@ class FinalModel:
             raise ValueError("x must have one column per spec feature name")
         columns = []
         if self.gbdts:
-            columns.append(np.mean([g.predict_proba(b.transform(x)) for b, g in zip(self.binners, self.gbdts)], axis=0))
+            columns.append(
+                np.mean(
+                    [
+                        g.predict_proba(b.transform(x))
+                        for b, g in zip(self.binners, self.gbdts)
+                    ],
+                    axis=0,
+                )
+            )
         if self.logistic is not None and self.feature_map is not None:
-            columns.append(self.logistic.predict_proba(lambda: self.feature_map.transform_chunks(x)))
+            columns.append(
+                self.logistic.predict_proba(
+                    lambda: self.feature_map.transform_chunks(x)
+                )
+            )
         return np.column_stack(columns)
 
     def predict_proba(self, x: Any) -> np.ndarray:
@@ -675,7 +793,9 @@ class FinalModel:
         return np.where(self.predict_proba(x) >= self.spec.threshold, 1, -1)
 
 
-def save_model(model: FinalModel, path: str | Path, recipe: Mapping[str, Any] | None = None) -> None:
+def save_model(
+    model: FinalModel, path: str | Path, recipe: Mapping[str, Any] | None = None
+) -> None:
     """Write every component (and the training recipe) to one compressed ``.npz`` file."""
     arrays: dict[str, Any] = {"spec": json.dumps(model.spec.to_json())}
     if recipe is not None:
@@ -683,7 +803,9 @@ def save_model(model: FinalModel, path: str | Path, recipe: Mapping[str, Any] | 
     for i, (binner, gbdt) in enumerate(zip(model.binners, model.gbdts)):
         arrays[f"binner_{i}"] = json.dumps(binner.to_dict())
         arrays[f"gbdt_{i}_meta"] = json.dumps(gbdt._meta())
-        arrays.update({f"gbdt_{i}_{key}": value for key, value in gbdt._stacked().items()})
+        arrays.update(
+            {f"gbdt_{i}_{key}": value for key, value in gbdt._stacked().items()}
+        )
     if model.feature_map is not None and model.logistic is not None:
         arrays["wide_features"] = json.dumps(model.feature_map.to_dict())
         arrays["wide_lr"] = json.dumps(model.logistic.to_dict())
@@ -699,9 +821,13 @@ def load_model(path: str | Path) -> tuple[FinalModel, dict[str, Any] | None]:
         for i in range(len(spec.gbdt)):
             binners.append(TreeBinner.from_dict(json.loads(str(data[f"binner_{i}"]))))
             arrays = {key: data[f"gbdt_{i}_{key}"] for key in TREE_DTYPES}
-            gbdts.append(GBDTClassifier._restore(json.loads(str(data[f"gbdt_{i}_meta"])), arrays))
+            gbdts.append(
+                GBDTClassifier._restore(json.loads(str(data[f"gbdt_{i}_meta"])), arrays)
+            )
         feature_map = logistic = None
         if spec.wide_lr:
-            feature_map = WideFeatureMap.from_dict(json.loads(str(data["wide_features"])))
+            feature_map = WideFeatureMap.from_dict(
+                json.loads(str(data["wide_features"]))
+            )
             logistic = NewtonLogistic.from_dict(json.loads(str(data["wide_lr"])))
     return FinalModel(spec, binners, gbdts, feature_map, logistic), recipe

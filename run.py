@@ -1,6 +1,6 @@
 """Reproduce the submitted predictions from the saved model, or retrain the model from the raw CSVs.
 
-    python run.py            # models/champion_v2.npz -> predictions/champion_v2.csv (the submission)
+    python run.py            # models/final_model.npz -> predictions/final_submission.csv
     python run.py --train    # retrain from dataset/ (30 to 45 minutes on 12 cores) into outputs/
 
 Unzip dataset.zip first; it creates dataset/. The model (see README.md) averages four NumPy
@@ -273,12 +273,13 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--model",
-        default=str(ROOT / "models" / "champion_v2.npz"),
+        default=str(ROOT / "models" / "final_model.npz"),
         help="saved model and recipe",
     )
     parser.add_argument(
         "--predictions",
-        help="CSV to write (default: predictions/champion_v2.csv, or OUTPUTS/champion_v2.csv with --train)",
+        help="CSV to write (default: predictions/final_submission.csv, "
+        "or OUTPUTS/final_submission.csv with --train)",
     )
     parser.add_argument(
         "--train",
@@ -314,7 +315,7 @@ def main(argv: list[str] | None = None) -> None:
         model = train(
             recipe, data_dir, out_dir / "cache", out_dir, args.workers, args.threads
         )
-    default = (out_dir if args.train else ROOT / "predictions") / "champion_v2.csv"
+    default = (out_dir if args.train else ROOT / "predictions") / "final_submission.csv"
     predict(
         model,
         data_dir,

@@ -102,7 +102,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", default=str(ROOT / "dataset"))
     parser.add_argument("--outputs", default=str(ROOT / "outputs"))
-    parser.add_argument("--model", default=str(ROOT / "models" / "champion_v2.npz"))
+    parser.add_argument("--model", default=str(ROOT / "models" / "final_model.npz"))
     parser.add_argument("--json", help="optional path for the metrics as JSON")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")

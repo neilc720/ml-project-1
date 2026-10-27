@@ -2,4 +2,4 @@
 * text=auto
 
 # Store the submission byte for byte: run.py writes CRLF line endings, like the course helper.
-predictions/champion_v2.csv -text
+predictions/final_submission.csv -text

@@ -1,7 +1,7 @@
 """Baselines built from the required methods in implementations.py, on the final model's folds.
 
 Run from the repository root (no ``--train`` run needed; the folds are re-derived from the
-recipe stored in models/champion_v2.npz, exactly as ``run.py --train`` derives them):
+recipe stored in models/final_model.npz, exactly as ``run.py --train`` derives them):
 
     python -m scripts.course_baselines
 
@@ -120,7 +120,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", default=str(ROOT / "dataset"))
     parser.add_argument("--outputs", default=str(ROOT / "outputs"))
-    parser.add_argument("--model", default=str(ROOT / "models" / "champion_v2.npz"))
+    parser.add_argument("--model", default=str(ROOT / "models" / "final_model.npz"))
     parser.add_argument("--lambda_", type=float, default=1e-4)
     parser.add_argument("--max-iters", type=int, default=10_000)
     parser.add_argument("--json", help="optional path for the metrics as JSON")

@@ -627,9 +627,9 @@ class NewtonLogistic:
             try:
                 direction = np.linalg.solve(state.hessian, state.gradient)
             except np.linalg.LinAlgError:
-                direction = np.linalg.lstsq(state.hessian, state.gradient, rcond=None)[
-                    0
-                ]
+                # Singular Hessian: minimum-norm step (numpy.linalg.lstsq is not used).
+                pseudo_inverse = np.linalg.pinv(state.hessian, hermitian=True)
+                direction = pseudo_inverse @ state.gradient
             slope = float(state.gradient @ direction)
             step = 1.0
             for _ in range(self.max_halvings):

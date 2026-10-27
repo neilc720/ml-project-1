@@ -49,7 +49,7 @@ def _regularization(lambda_):
 def mean_squared_error_loss(y: np.ndarray, tx: np.ndarray, w: np.ndarray) -> float:
     """Return sum((y - tx @ w)**2) / (2 N), including the required factor 0.5."""
     residual = np.asarray(y) - np.asarray(tx) @ np.asarray(w)
-    return float(0.5 * np.mean(residual**2))
+    return 0.5 * np.mean(residual**2)
 
 
 def mean_squared_error_gradient(
@@ -151,7 +151,7 @@ def logistic_loss(y: np.ndarray, tx: np.ndarray, w: np.ndarray) -> float:
     # The signed-margin form also avoids subtracting nearly equal large values
     # for a confident, correct positive prediction.
     with np.errstate(under="ignore"):
-        return float(np.mean(np.logaddexp(0.0, (1 - 2 * y) * logits)))
+        return np.mean(np.logaddexp(0.0, (1 - 2 * y) * logits))
 
 
 def logistic_regression(

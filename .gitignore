@@ -4,5 +4,15 @@
 github_workdir/
 .venv/
 dataset/
+dataset.zip
 outputs/
 tmp/
+
+# LaTeX build files from compiling main.tex
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+main.pdf

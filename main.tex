@@ -24,7 +24,7 @@
 \title{Heart-Disease Classification from BRFSS}
 
 \author{
-  Lin, Jiawei \quad Abbasi, Reza \quad Chadli, Neil\\
+  Jiawei Lin \quad Reza Abbasi \quad Neil Chadli\\
   \textit{EPFL, Lausanne, Switzerland}\\
   {\small
   \href{mailto:jiawei.lin@epfl.ch}{jiawei.lin@epfl.ch} \quad
@@ -79,10 +79,27 @@ are clipped, standardized, and expanded with ten quantile-bin indicators;
 variables that contain missing training values also receive an explicit
 missingness flag.
 
+% A full-width figure is placed at the top of the page after its source, so
+% it is declared here, on page 1, to appear at the top of page 2.
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/oof_evaluation_panels.pdf}
+  \caption{Out-of-fold evaluation of the final blend ($n=328{,}135$).
+  (a) Precision--recall curve; the dashed line is class prevalence and the
+  diamond is the selected operating point. (b) Precision, recall, and F1 as
+  the decision threshold changes; markers compare the selected and default
+  cutoffs.}
+  \label{fig:evaluation}
+\end{figure*}
+
 \subsection{Predictive models}
 
 We first evaluate ridge regression and regularized logistic regression from
-the required course implementations. The wide logistic model then uses the
+the required course implementations, both with $\lambda=10^{-4}$. They use a
+bias column and standardized variables whose missing values are set to the
+training mean; the flagged variants add centered missingness indicators.
+Logistic regression runs 10,000 gradient steps of size $1/L$, where $L$ is the
+Lipschitz constant of the gradient. The wide logistic model then uses the
 expanded linear features, Newton optimization, and an $L_2$ penalty of
 $10^{-4}$.
 
@@ -95,7 +112,7 @@ mean probability is blended with the wide logistic score:
 
 \begin{equation}
 p(x)=0.85\left(\frac{1}{4}\sum_{k=1}^{4}p_{\mathrm{GBDT},k}(x)\right)
-     +0.15p_{\mathrm{logistic}}(x).
+     +0.15\,p_{\mathrm{logistic}}(x).
 \end{equation}
 
 The final classifier predicts $+1$ when $p(x)\geq0.2131$.
@@ -132,7 +149,7 @@ add a smaller final improvement.
     Reg. logistic + flags & 0.437 & +0.008 \\
     Wide logistic & 0.441 & +0.004 \\
     Single GBDT (mean over seeds) & 0.447 & +0.006 \\
-    Four-GBDT average + logistic blend & \textbf{0.449} & +0.002 \\
+    Four-GBDT average + logistic blend & \textbf{0.448} & +0.001 \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -144,21 +161,10 @@ shows that the selected threshold 0.2131 balances precision 0.3756 and recall
 Selecting each fold's threshold using only the other folds gives F1 0.4477,
 just 0.0008 below the pooled result.
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/oof_evaluation_panels.pdf}
-  \caption{Out-of-fold evaluation of the final blend ($n=328{,}135$).
-  (a) Precision--recall curve; the dashed line is class prevalence and the
-  diamond is the selected operating point. (b) Precision, recall, and F1 as
-  the decision threshold changes; markers compare the selected and default
-  cutoffs.}
-  \label{fig:evaluation}
-\end{figure*}
-
 Table~\ref{tab:checks} reports the exact ensemble and validation checks.
-Threshold-free AUC and average precision (AP) improve slightly with averaging
-and blending, while the cross-fold threshold result stays close to the pooled
-score.
+The threshold-free area under the ROC curve (AUC) and average precision (AP)
+improve slightly with averaging and blending, while the cross-fold threshold
+result stays close to the pooled score.
 
 \begin{table}[t]
   \caption{Validation and ensemble checks.}
@@ -191,7 +197,6 @@ reveal the target. The system must therefore not be interpreted as a screening
 tool for future risk, and its routing patterns may not transfer to a different
 survey.
 
-\newpage
 The validation estimate is not fully independent: GBDT early stopping uses
 the fold later scored, and the pooled threshold is selected from the same
 out-of-fold predictions. We did not evaluate probability calibration or use a
@@ -211,9 +216,9 @@ evaluation and course-baseline scripts reproduce the reported metrics, and
 
 Preserving survey missingness is the most important contribution: it improves
 a course baseline before the model family changes. Missing-aware nonlinear
-trees provide the next clear gain, whereas bagging and blending offer a modest
-refinement. This sequence of controlled comparisons explains both the final
-performance and the limits of what the model has learned.
+trees provide the next clear gain, whereas seed averaging and blending offer a
+modest refinement. This sequence of controlled comparisons explains both the
+final performance and the limits of what the model has learned.
 
 \begin{thebibliography}{1}
 

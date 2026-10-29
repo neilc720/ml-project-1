@@ -3,7 +3,7 @@
     python run.py            # models/final_model.npz -> predictions/final_submission.csv
     python run.py --train    # retrain from dataset/ (30 to 45 minutes on 12 cores) into outputs/
 
-Unzip dataset.zip first; it creates dataset/. The model (see README.md) averages four NumPy
+Put the course CSV files in dataset/ first (see README.md). The model averages four NumPy
 gradient-boosted tree models, blends them 0.85/0.15 with a wide logistic regression and labels a row +1
 when the blended probability reaches the stored threshold. Both modes report whether the CSV they write
 is byte-identical to the submitted one. Nothing is uploaded anywhere.

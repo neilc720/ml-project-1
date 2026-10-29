@@ -21,14 +21,35 @@ gradient-boosted decision tree models with a regularized logistic regression.
 ### Requirements
 
 - Python 3.9 or newer
-- NumPy
+- NumPy (tested with Python 3.9.6 and NumPy 1.23.1, and with Python 3.13.9
+  and NumPy 2.3.5; both reproduce the submitted predictions byte for byte)
+- matplotlib, only to regenerate the report figure with
+  `scripts/report_figures.py`
 - About 1.1 GB of free space for the parsed-data cache
 
-Run all commands from the repository root. If `dataset/` is not already
-present, extract the supplied course data first:
+### Data
+
+The dataset is not included in this repository. Download `x_train.csv`,
+`y_train.csv`, and `x_test.csv` from the
+[AIcrowd challenge page](https://www.aicrowd.com/challenges/epfl-machine-learning-project-1)
+and place them, with unchanged file names, in a `dataset/` folder at the
+repository root:
+
+```text
+dataset/
+├── x_train.csv
+├── y_train.csv
+└── x_test.csv
+```
+
+To keep the files elsewhere, pass `--data PATH` to `run.py`,
+`scripts.evaluate_cv`, or `scripts.course_baselines`.
+
+### Reproduce the submission
+
+Run all commands from the repository root:
 
 ```sh
-unzip -n dataset.zip
 python run.py
 ```
 
@@ -98,7 +119,7 @@ are rounded to three decimals.
 | Regularized logistic regression with missingness indicators | 0.437 |
 | Wide logistic regression | 0.441 |
 | Single GBDT (mean F1 across four seeds) | 0.447 |
-| **Final ensemble** | **0.449** |
+| **Final ensemble** | **0.448** |
 
 Selecting each fold's threshold using the other folds gives F1 0.4477, close
 to the pooled out-of-fold value of 0.4485. The comparison shows that preserving
@@ -181,6 +202,10 @@ specification.
 | `predictions/final_submission.csv` | Submitted predictions |
 | `scripts/evaluate_cv.py` | Final-model cross-validation metrics |
 | `scripts/course_baselines.py` | Ridge and logistic baseline evaluation |
+| `scripts/report_figures.py` | Report figure from the saved out-of-fold predictions (requires matplotlib) |
+| `scripts/data_experiments.py`, `scripts/preprocessing.py`, `scripts/helper.py` | Earlier exploratory preprocessing experiments; not part of the final reproduction path |
+| `figures/` | Report figure (PDF used in the report, PNG preview) |
+| `main.tex`, `IEEEtran.cls` | LaTeX source of the report |
 
 Generated caches and retraining artifacts are written under `outputs/`.
 

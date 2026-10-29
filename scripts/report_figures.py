@@ -139,9 +139,7 @@ def main() -> None:
         label=f"Selected $t$ = {threshold:.3f} ($F_1$ = {point_f1:.3f})",
     )
     ax_pr.set_title("(a) Precision-recall", loc="left", fontsize=8, fontweight="bold")
-    ax_pr.set(
-        xlabel="Recall", ylabel="Precision", xlim=(0.0, 1.0), ylim=(0.0, 1.0)
-    )
+    ax_pr.set(xlabel="Recall", ylabel="Precision", xlim=(0.0, 1.0), ylim=(0.0, 1.0))
     ax_pr.set_xticks(np.linspace(0.0, 1.0, 6))
     ax_pr.set_yticks(np.linspace(0.0, 1.0, 6))
     ax_pr.legend(loc="upper right", frameon=False, handlelength=2.2)
